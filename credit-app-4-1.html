@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Note</title>
+
+<style>
+/* ============================================================
+   BASIC RESET
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f5f7;
+  color: #222;
+  padding-bottom: 40px;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  background: #1a56db;
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar h1 { font-size: 20px; }
+.topbar button {
+  background: #fff;
+  color: #1a56db;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+/* ============================================================
+   CONTAINER
+   ============================================================ */
+.container { padding: 14px; max-width: 500px; margin: 0 auto; }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+.login-box {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 320px;
+  margin: 60px auto;
+  text-align: center;
+}
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+.search-box {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   HOME (PRE-LOGIN) - name + credit/payment buttons only
+   ============================================================ */
+.home-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.home-card .name { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+
+/* ============================================================
+   DASHBOARD (POST-LOGIN) - name + balance + share/history
+   ============================================================ */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stat-box {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-box.wide { grid-column: 1 / 3; }
+.stat-box .num { font-size: 24px; font-weight: bold; color: #1a56db; }
+.stat-box .label { font-size: 13px; color: #555; }
+
+.customer-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.customer-card .name { font-size: 16px; font-weight: bold; }
+.customer-card .mobile { font-size: 13px; color: #555; margin-bottom: 4px; }
+.customer-card .balance { font-size: 22px; font-weight: bold; color: #c62828; margin: 6px 0; }
+.customer-card .balance.zero { color: #0a8a0a; }
+
+.btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 80px; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: block;
+  padding: 11px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-full { width: 100%; }
+.btn-primary { background: #1a56db; color: #fff; }
+.btn-green { background: #0a8a0a; color: #fff; }
+.btn-orange { background: #e08a00; color: #fff; }
+.btn-red { background: #c62828; color: #fff; }
+.btn-gray { background: #888; color: #fff; }
+
+/* ============================================================
+   MODAL (Add Customer)
+   ============================================================ */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 18px;
+  width: 100%;
+  max-width: 360px;
+}
+.modal h2 { font-size: 18px; margin-bottom: 14px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+.field input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.hidden { display: none; }
+.empty-msg { text-align: center; color: #777; padding: 30px 10px; font-size: 14px; }
+.error-msg { color: #c62828; font-size: 13px; margin-bottom: 10px; }
+
+.fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #1a56db;
+  color: #fff;
+  font-size: 28px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.history-item {
+  font-size: 13px;
+  color: #333;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+.history-item.credit { color: #c62828; }
+.history-item.payment { color: #0a8a0a; }
+
+/* ============================================================
+   TOAST NOTIFICATION (pre-login confirmation only)
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 200;
+  max-width: 90%;
+  text-align: center;
+}
+
+.footer-link {
+  text-align: center;
+  margin-top: 24px;
+}
+.footer-link a {
+  font-size: 12px;
+  color: #999;
+  text-decoration: underline;
+}
+
+.report-toggle {
+  margin-bottom: 12px;
+}
+
+.report-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.report-row .field { flex: 1; margin-bottom: 0; }
+
+.report-summary {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.report-summary div { margin-bottom: 3px; }
+
+.report-cust-block {
+  border-bottom: 1px solid #eee;
+  padding: 8px 0;
+}
+.report-cust-block .rc-name { font-weight: bold; font-size: 14px; }
+.report-cust-block .rc-line { font-size: 12px; color: #333; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HOME VIEW (default - NO LOGIN NEEDED)
+     Only customer names + Credit/Payment buttons.
+     No totals, no balances, no history - safe if anyone picks up the phone.
+     ============================================================ -->
+<div id="homeView">
+  <div class="topbar">
+    <h1>\uD83D\uDCB0 Credit Note</h1>
+  </div>
+
+  <div class="container">
+    <input type="text" id="homeSearchBox" class="search-box" placeholder="பெயர் தேடவும்...">
+    <div id="homeList"></div>
+
+    <div class="footer-link">
+      <a href="#" data-action="go-login">Admin Login</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     LOGIN VIEW
+     ============================================================ -->
+<div id="loginView" class="container hidden">
+  <div class="login-box">
+    <h2 style="margin-bottom:12px;">\uD83D\uDCB0 Admin Login</h2>
+    <div id="loginError" class="error-msg hidden">Wrong password. Try again.</div>
+    <input type="password" id="passwordInput" placeholder="Password போடவும்">
+    <button class="btn btn-primary btn-full" data-action="login">Login</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" data-action="go-home">Back</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP VIEW (AFTER LOGIN ONLY)
+     Totals, Share, History, Add Customer - all live here.
+     ============================================================ -->
+<div id="mainView" class="hidden">
+  <div class="topbar">
+    <h1>\uD83D\uDCB0 Dashboard</h1>
+    <button data-action="logout">Logout</button>
+  </div>
+
+  <div class="container">
+    <div class="stat-grid" id="statGrid"></div>
+
+    <button class="btn btn-orange btn-full report-toggle" data-action="open-date-report">\uD83D\uDCC5 Date-வாரியான Report</button>
+
+    <input type="text" id="searchBox" class="search-box" placeholder="பெயர் தேடவும்...">
+    <div id="customersList"></div>
+  </div>
+
+  <button class="fab" data-action="open-add-customer" title="Add Customer">+</button>
+</div>
+
+<!-- ============================================================
+     ADD CUSTOMER MODAL (after login only)
+     ============================================================ -->
+<div id="addCustomerModal" class="overlay hidden">
+  <div class="modal">
+    <h2>புதிய Customer சேர்க்க</h2>
+    <div id="addCustError" class="error-msg hidden">பெயர் மற்றும் மொபைல் நிரப்பவும்.</div>
+    <div class="field">
+      <label>பெயர்</label>
+      <input type="text" id="newCustName" placeholder="Customer பெயர்">
+    </div>
+    <div class="field">
+      <label>மொபைல் நம்பர் (fixed - ஒரே தடவை)</label>
+      <input type="tel" id="newCustMobile" placeholder="10 இலக்க மொபைல் நம்பர்">
+    </div>
+    <button class="btn btn-primary btn-full" data-action="save-customer">சேர்க்கவும்</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" data-action="close-add-customer">Cancel</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     HISTORY MODAL (after login only, has its own Share button)
+     ============================================================ -->
+<div id="historyModal" class="overlay hidden">
+  <div class="modal">
+    <h2 id="historyTitle">History</h2>
+    <div id="historyList" style="max-height:280px; overflow-y:auto; margin-bottom:14px;"></div>
+    <button class="btn btn-green btn-full" id="shareHistoryBtn" data-action="share-history">History-ஐ WhatsApp-ல் Share பண்ணு</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" data-action="close-history">Close</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     EDIT CUSTOMER MODAL (after login only) - name/mobile only
+     ============================================================ -->
+<div id="editCustomerModal" class="overlay hidden">
+  <div class="modal">
+    <h2>Customer விவரம் Edit</h2>
+    <div id="editCustError" class="error-msg hidden">பெயர் மற்றும் மொபைல் நிரப்பவும்.</div>
+    <div class="field">
+      <label>பெயர்</label>
+      <input type="text" id="editCustName" placeholder="Customer பெயர்">
+    </div>
+    <div class="field">
+      <label>மொபைல் நம்பர்</label>
+      <input type="tel" id="editCustMobile" placeholder="10 இலக்க மொபைல் நம்பர்">
+    </div>
+    <button class="btn btn-primary btn-full" data-action="save-edit-customer">Save Pannu</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" data-action="close-edit-customer">Cancel</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     DATE REPORT MODAL (after login only)
+     ============================================================ -->
+<div id="dateReportModal" class="overlay hidden">
+  <div class="modal">
+    <h2>\uD83D\uDCC5 Date-வாரியான Report</h2>
+    <div class="report-row">
+      <div class="field">
+        <label>From Date</label>
+        <input type="date" id="reportFromDate">
+      </div>
+      <div class="field">
+        <label>To Date</label>
+        <input type="date" id="reportToDate">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" data-action="generate-date-report">Report பார்க்க</button>
+    <div id="reportResults" style="margin-top:14px; max-height:320px; overflow-y:auto;"></div>
+    <button class="btn btn-green btn-full hidden" id="shareReportBtn" style="margin-top:10px;" data-action="share-date-report">Report-ஐ WhatsApp-ல் Share பண்ணு</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" data-action="close-date-report">Close</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST NOTIFICATION
+     ============================================================ -->
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* ================================================================
+   CREDIT LEDGER APP
+   - Home screen (no login): only customer names + Credit/Payment
+     buttons. Tapping either just logs the amount and shows a toast.
+     No totals, balances, or history are visible here.
+   - Everything else (totals, share, history, add customer) needs
+     the admin password.
+   ================================================================ */
+
+(function () {
+  "use strict";
+
+  var APP_PASSWORD = "admin123"; // change this to your own password
+  var SESSION_KEY = "creditapp_logged_in";
+  var CUSTOMERS_KEY = "creditapp_customers";
+  var TRANSACTIONS_KEY = "creditapp_transactions";
+
+  var state = { historyCustomerId: null, editCustomerId: null };
+
+  /* ----------------------------------------------------------
+     STORAGE HELPERS
+     ---------------------------------------------------------- */
+  function loadCustomers() {
+    var raw = localStorage.getItem(CUSTOMERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveCustomers(list) { localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list)); }
+
+  function loadTransactions() {
+    var raw = localStorage.getItem(TRANSACTIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveTransactions(list) { localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(list)); }
+
+  function newId() { return String(Date.now()) + String(Math.floor(Math.random() * 1000)); }
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+  /* ----------------------------------------------------------
+     TOAST NOTIFICATION
+     ---------------------------------------------------------- */
+  var toastTimer = null;
+  function showToast(msg) {
+    var toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.remove("hidden");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.add("hidden"); }, 2500);
+  }
+
+  /* ----------------------------------------------------------
+     VIEW SWITCHING
+     ---------------------------------------------------------- */
+  function showHome() {
+    document.getElementById("homeView").classList.remove("hidden");
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("mainView").classList.add("hidden");
+    renderHomeList();
+  }
+
+  function showLogin() {
+    document.getElementById("homeView").classList.add("hidden");
+    document.getElementById("loginView").classList.remove("hidden");
+    document.getElementById("mainView").classList.add("hidden");
+    document.getElementById("passwordInput").value = "";
+    document.getElementById("loginError").classList.add("hidden");
+  }
+
+  function showMain() {
+    document.getElementById("homeView").classList.add("hidden");
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("mainView").classList.remove("hidden");
+    renderDashboard();
+    renderCustomersList();
+  }
+
+  function login() {
+    var pass = document.getElementById("passwordInput").value;
+    if (pass === APP_PASSWORD) {
+      localStorage.setItem(SESSION_KEY, "yes");
+      showMain();
+    } else {
+      document.getElementById("loginError").classList.remove("hidden");
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem(SESSION_KEY);
+    showHome();
+  }
+
+  /* ----------------------------------------------------------
+     HOME (PRE-LOGIN): render customer names + credit/payment buttons
+     ---------------------------------------------------------- */
+  function renderHomeList() {
+    var searchTerm = (document.getElementById("homeSearchBox").value || "").trim().toLowerCase();
+    var customers = loadCustomers();
+
+    if (searchTerm) {
+      customers = customers.filter(function (c) { return c.name.toLowerCase().indexOf(searchTerm) !== -1; });
+    }
+
+    var sorted = customers.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+    var list = document.getElementById("homeList");
+
+    if (sorted.length === 0) {
+      list.innerHTML = '<div class="empty-msg">Customers இல்லை. Admin Login பண்ணி புதிய Customer சேர்க்கவும்.</div>';
+      return;
+    }
+
+    list.innerHTML = "";
+    sorted.forEach(function (c) {
+      var card = document.createElement("div");
+      card.className = "home-card";
+      card.innerHTML =
+        '<div class="name">' + c.name + '</div>' +
+        '<div class="btn-row">' +
+        '<button class="btn btn-red" data-action="home-credit" data-id="' + c.id + '">கடன்</button>' +
+        '<button class="btn btn-green" data-action="home-payment" data-id="' + c.id + '">பணம்</button>' +
+        '</div>';
+      list.appendChild(card);
+    });
+  }
+
+  function homeAddCredit(customerId) {
+    var cust = findCustomer(customerId);
+    if (!cust) return;
+    var amount = Number(prompt(cust.name + " - எவ்வளவு தொகை கடன்? (\u20B9)", ""));
+    if (!amount || amount <= 0) return;
+
+    updateBalance(customerId, amount);
+    logTransaction(customerId, "credit", amount);
+    showToast("\u2705 \u20B9" + amount + " கடன் சேமிக்கப்பட்டது");
+  }
+
+  function homeRecordPayment(customerId) {
+    var cust = findCustomer(customerId);
+    if (!cust) return;
+    var amount = Number(prompt(cust.name + " - எவ்வளவு தொகை பணம்? (\u20B9)", ""));
+    if (!amount || amount <= 0) return;
+
+    updateBalance(customerId, -amount);
+    logTransaction(customerId, "payment", amount);
+    showToast("\u2705 \u20B9" + amount + " பணம் சேமிக்கப்பட்டது");
+  }
+
+  /* ----------------------------------------------------------
+     SHARED DATA HELPERS
+     ---------------------------------------------------------- */
+  function findCustomer(customerId) {
+    return loadCustomers().filter(function (c) { return c.id === customerId; })[0] || null;
+  }
+
+  function updateBalance(customerId, delta) {
+    var customers = loadCustomers();
+    for (var i = 0; i < customers.length; i++) {
+      if (customers[i].id === customerId) {
+        customers[i].balance = (customers[i].balance || 0) + delta;
+        break;
+      }
+    }
+    saveCustomers(customers);
+  }
+
+  function logTransaction(customerId, type, amount) {
+    var transactions = loadTransactions();
+    transactions.push({ id: newId(), customerId: customerId, type: type, amount: amount, date: todayStr() });
+    saveTransactions(transactions);
+  }
+
+  /* ----------------------------------------------------------
+     ADD CUSTOMER (after login only)
+     ---------------------------------------------------------- */
+  function openAddCustomer() {
+    document.getElementById("newCustName").value = "";
+    document.getElementById("newCustMobile").value = "";
+    document.getElementById("addCustError").classList.add("hidden");
+    document.getElementById("addCustomerModal").classList.remove("hidden");
+  }
+  function closeAddCustomer() {
+    document.getElementById("addCustomerModal").classList.add("hidden");
+  }
+  function saveCustomer() {
+    var name = document.getElementById("newCustName").value.trim();
+    var mobile = document.getElementById("newCustMobile").value.trim();
+
+    if (!name || !mobile) {
+      document.getElementById("addCustError").classList.remove("hidden");
+      return;
+    }
+
+    var customers = loadCustomers();
+    customers.push({ id: newId(), name: name, mobile: mobile, balance: 0 });
+    saveCustomers(customers);
+
+    closeAddCustomer();
+    renderDashboard();
+    renderCustomersList();
+  }
+
+  /* ----------------------------------------------------------
+     DASHBOARD (after login only)
+     ---------------------------------------------------------- */
+  function renderDashboard() {
+    var customers = loadCustomers();
+    var totalOutstanding = 0;
+    customers.forEach(function (c) { totalOutstanding += (c.balance || 0); });
+
+    document.getElementById("statGrid").innerHTML =
+      '<div class="stat-box"><div class="num">' + customers.length + '</div><div class="label">Total Customers</div></div>' +
+      '<div class="stat-box"><div class="num">\u20B9' + totalOutstanding + '</div><div class="label">Total Outstanding</div></div>';
+  }
+
+  function renderCustomersList() {
+    var searchTerm = (document.getElementById("searchBox").value || "").trim().toLowerCase();
+    var customers = loadCustomers();
+
+    if (searchTerm) {
+      customers = customers.filter(function (c) { return c.name.toLowerCase().indexOf(searchTerm) !== -1; });
+    }
+
+    var sorted = customers.slice().sort(function (a, b) { return (b.balance || 0) - (a.balance || 0); });
+
+    var list = document.getElementById("customersList");
+
+    if (sorted.length === 0) {
+      list.innerHTML = '<div class="empty-msg">Customers இல்லை. கீழ + பொத்தானை அழுத்தி சேர்க்கவும்.</div>';
+      return;
+    }
+
+    list.innerHTML = "";
+    sorted.forEach(function (c) {
+      var balanceClass = (c.balance || 0) > 0 ? "balance" : "balance zero";
+
+      var card = document.createElement("div");
+      card.className = "customer-card";
+      card.innerHTML =
+        '<div class="name">' + c.name + '</div>' +
+        '<div class="mobile">' + c.mobile + '</div>' +
+        '<div class="' + balanceClass + '">\u20B9' + (c.balance || 0) + '</div>' +
+        '<div class="btn-row">' +
+        '<button class="btn btn-primary" data-action="whatsapp" data-id="' + c.id + '">Share</button>' +
+        '<button class="btn btn-gray" data-action="history" data-id="' + c.id + '">History</button>' +
+        '<button class="btn btn-orange" data-action="edit-customer" data-id="' + c.id + '">Edit</button>' +
+        '</div>';
+      list.appendChild(card);
+    });
+  }
+
+  /* ----------------------------------------------------------
+     WHATSAPP SHARE (balance)
+     ---------------------------------------------------------- */
+  function whatsappBalance(customerId) {
+    var cust = findCustomer(customerId);
+    if (!cust) return;
+
+    var mobile = String(cust.mobile).replace(/\D/g, "");
+    if (mobile.length === 10) mobile = "91" + mobile;
+
+    var msg = "வணக்கம் " + cust.name + ", உங்கள் தற்போதைய பாக்கி தொகை \u20B9" + (cust.balance || 0) + ". நன்றி.";
+    window.open("https://wa.me/" + mobile + "?text=" + encodeURIComponent(msg), "_blank");
+  }
+
+  /* ----------------------------------------------------------
+     HISTORY MODAL + SHARE FULL HISTORY
+     ---------------------------------------------------------- */
+  function openHistory(customerId) {
+    var cust = findCustomer(customerId);
+    if (!cust) return;
+
+    state.historyCustomerId = customerId;
+    document.getElementById("historyTitle").textContent = cust.name + " - History";
+
+    var transactions = loadTransactions()
+      .filter(function (t) { return t.customerId === customerId; })
+      .sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+    var listEl = document.getElementById("historyList");
+    if (transactions.length === 0) {
+      listEl.innerHTML = '<div class="empty-msg">Transactions இல்லை.</div>';
+    } else {
+      listEl.innerHTML = transactions.map(function (t) {
+        var label = t.type === "credit" ? "கடன் கொடுத்தது" : "பணம் வாங்கியது";
+        var sign = t.type === "credit" ? "+" : "-";
+        return '<div class="history-item ' + t.type + '">' + t.date + ' - ' + label + ': ' + sign + '\u20B9' + t.amount + '</div>';
+      }).join("");
+    }
+
+    document.getElementById("historyModal").classList.remove("hidden");
+  }
+  function closeHistory() {
+    document.getElementById("historyModal").classList.add("hidden");
+  }
+
+  function shareHistory() {
+    var customerId = state.historyCustomerId;
+    var cust = findCustomer(customerId);
+    if (!cust) return;
+
+    var transactions = loadTransactions()
+      .filter(function (t) { return t.customerId === customerId; })
+      .sort(function (a, b) { return a.date.localeCompare(b.date); });
+
+    var lines = [];
+    lines.push("வணக்கம் " + cust.name + ", உங்கள் கடன் கணக்கு:");
+    lines.push("");
+
+    if (transactions.length === 0) {
+      lines.push("Transactions இல்லை.");
+    } else {
+      transactions.forEach(function (t) {
+        var label = t.type === "credit" ? "கடன்" : "பணம்";
+        var sign = t.type === "credit" ? "+" : "-";
+        lines.push(t.date + " - " + label + ": " + sign + "\u20B9" + t.amount);
+      });
+    }
+
+    lines.push("");
+    lines.push("தற்போதைய பாக்கி: \u20B9" + (cust.balance || 0));
+
+    var mobile = String(cust.mobile).replace(/\D/g, "");
+    if (mobile.length === 10) mobile = "91" + mobile;
+
+    var msg = lines.join("\n");
+    window.open("https://wa.me/" + mobile + "?text=" + encodeURIComponent(msg), "_blank");
+  }
+
+  /* ----------------------------------------------------------
+     EDIT CUSTOMER (name/mobile only, after login)
+     ---------------------------------------------------------- */
+  function openEditCustomer(customerId) {
+    var cust = findCustomer(customerId);
+    if (!cust) return;
+
+    state.editCustomerId = customerId;
+    document.getElementById("editCustName").value = cust.name;
+    document.getElementById("editCustMobile").value = cust.mobile;
+    document.getElementById("editCustError").classList.add("hidden");
+    document.getElementById("editCustomerModal").classList.remove("hidden");
+  }
+  function closeEditCustomer() {
+    document.getElementById("editCustomerModal").classList.add("hidden");
+    state.editCustomerId = null;
+  }
+  function saveEditCustomer() {
+    var name = document.getElementById("editCustName").value.trim();
+    var mobile = document.getElementById("editCustMobile").value.trim();
+
+    if (!name || !mobile) {
+      document.getElementById("editCustError").classList.remove("hidden");
+      return;
+    }
+
+    var customerId = state.editCustomerId;
+    var customers = loadCustomers();
+    for (var i = 0; i < customers.length; i++) {
+      if (customers[i].id === customerId) {
+        customers[i].name = name;
+        customers[i].mobile = mobile;
+        break;
+      }
+    }
+    saveCustomers(customers);
+
+    closeEditCustomer();
+    renderDashboard();
+    renderCustomersList();
+    showToast("\u2705 Customer விவரம் Update ஆனது");
+  }
+
+  /* ----------------------------------------------------------
+     DATE-WISE REPORT (after login only)
+     ---------------------------------------------------------- */
+  var lastReportText = "";
+
+  function openDateReport() {
+    document.getElementById("reportFromDate").value = todayStr();
+    document.getElementById("reportToDate").value = todayStr();
+    document.getElementById("reportResults").innerHTML = "";
+    document.getElementById("shareReportBtn").classList.add("hidden");
+    document.getElementById("dateReportModal").classList.remove("hidden");
+  }
+  function closeDateReport() {
+    document.getElementById("dateReportModal").classList.add("hidden");
+  }
+
+  function generateDateReport() {
+    var fromDate = document.getElementById("reportFromDate").value;
+    var toDate = document.getElementById("reportToDate").value;
+    var resultsEl = document.getElementById("reportResults");
+
+    if (!fromDate || !toDate) {
+      resultsEl.innerHTML = '<div class="error-msg">From Date மற்றும் To Date தேர்வு செய்யவும்.</div>';
+      document.getElementById("shareReportBtn").classList.add("hidden");
+      return;
+    }
+    if (fromDate > toDate) {
+      resultsEl.innerHTML = '<div class="error-msg">From Date, To Date-க்கு முன் இருக்கணும்.</div>';
+      document.getElementById("shareReportBtn").classList.add("hidden");
+      return;
+    }
+
+    var transactions = loadTransactions().filter(function (t) {
+      return t.date >= fromDate && t.date <= toDate;
+    });
+
+    var customers = loadCustomers();
+    var custMap = {};
+    customers.forEach(function (c) { custMap[c.id] = c; });
+
+    var grouped = {};
+    var totalCredit = 0, totalPayment = 0;
+
+    transactions.forEach(function (t) {
+      if (!grouped[t.customerId]) grouped[t.customerId] = [];
+      grouped[t.customerId].push(t);
+      if (t.type === "credit") totalCredit += t.amount;
+      else totalPayment += t.amount;
+    });
+
+    var custIds = Object.keys(grouped);
+
+    if (custIds.length === 0) {
+      resultsEl.innerHTML = '<div class="empty-msg">இந்த Date Range-ல் Transactions இல்லை.</div>';
+      document.getElementById("shareReportBtn").classList.add("hidden");
+      lastReportText = "";
+      return;
+    }
+
+    var summaryHtml =
+      '<div class="report-summary">' +
+      '<div><b>Period:</b> ' + fromDate + ' முதல் ' + toDate + ' வரை</div>' +
+      '<div><b>மொத்த கடன்:</b> \u20B9' + totalCredit + '</div>' +
+      '<div><b>மொத்த பணம் வசூல்:</b> \u20B9' + totalPayment + '</div>' +
+      '<div><b>நிகர மாற்றம்:</b> \u20B9' + (totalCredit - totalPayment) + '</div>' +
+      '</div>';
+
+    var blocksHtml = "";
+    var textLines = [];
+    textLines.push("\uD83D\uDCC5 Date Report: " + fromDate + " முதல் " + toDate + " வரை");
+    textLines.push("");
+
+    custIds.forEach(function (cid) {
+      var cust = custMap[cid];
+      var custName = cust ? cust.name : "(Deleted Customer)";
+      var custTx = grouped[cid].sort(function (a, b) { return a.date.localeCompare(b.date); });
+
+      blocksHtml += '<div class="report-cust-block"><div class="rc-name">' + custName + '</div>';
+      textLines.push("\u2022 " + custName);
+
+      custTx.forEach(function (t) {
+        var label = t.type === "credit" ? "கடன்" : "பணம்";
+        var sign = t.type === "credit" ? "+" : "-";
+        blocksHtml += '<div class="rc-line">' + t.date + ' - ' + label + ': ' + sign + '\u20B9' + t.amount + '</div>';
+        textLines.push("  " + t.date + " - " + label + ": " + sign + "\u20B9" + t.amount);
+      });
+
+      blocksHtml += '</div>';
+      textLines.push("");
+    });
+
+    textLines.push("மொத்த கடன்: \u20B9" + totalCredit);
+    textLines.push("மொத்த பணம் வசூல்: \u20B9" + totalPayment);
+    textLines.push("நிகர மாற்றம்: \u20B9" + (totalCredit - totalPayment));
+
+    resultsEl.innerHTML = summaryHtml + blocksHtml;
+    lastReportText = textLines.join("\n");
+    document.getElementById("shareReportBtn").classList.remove("hidden");
+  }
+
+  function shareDateReport() {
+    if (!lastReportText) return;
+    window.open("https://wa.me/?text=" + encodeURIComponent(lastReportText), "_blank");
+  }
+
+  /* ----------------------------------------------------------
+     EVENT DELEGATION
+     ---------------------------------------------------------- */
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-action]");
+    if (!el) return;
+
+    e.preventDefault();
+
+    var action = el.getAttribute("data-action");
+    var id = el.getAttribute("data-id");
+
+    if (action === "go-login") showLogin();
+    else if (action === "go-home") showHome();
+    else if (action === "login") login();
+    else if (action === "logout") logout();
+    else if (action === "home-credit") homeAddCredit(id);
+    else if (action === "home-payment") homeRecordPayment(id);
+    else if (action === "open-add-customer") openAddCustomer();
+    else if (action === "close-add-customer") closeAddCustomer();
+    else if (action === "save-customer") saveCustomer();
+    else if (action === "whatsapp") whatsappBalance(id);
+    else if (action === "history") openHistory(id);
+    else if (action === "close-history") closeHistory();
+    else if (action === "share-history") shareHistory();
+    else if (action === "edit-customer") openEditCustomer(id);
+    else if (action === "close-edit-customer") closeEditCustomer();
+    else if (action === "save-edit-customer") saveEditCustomer();
+    else if (action === "open-date-report") openDateReport();
+    else if (action === "close-date-report") closeDateReport();
+    else if (action === "generate-date-report") generateDateReport();
+    else if (action === "share-date-report") shareDateReport();
+  });
+
+  document.addEventListener("input", function (e) {
+    if (e.target.id === "homeSearchBox") renderHomeList();
+    if (e.target.id === "searchBox") renderCustomersList();
+  });
+
+  /* ----------------------------------------------------------
+     INITIAL LOAD
+     ---------------------------------------------------------- */
+  showHome();
+
+})();
+</script>
+</body>
+</html>
